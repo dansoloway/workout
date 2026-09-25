@@ -5,18 +5,28 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// cPanel serves this app from public_html/workout, while this file lives in public/.
-// Tell Laravel the site root is /workout so routes and asset URLs stay on that path.
-$subdirectory = '/workout';
-$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+// When this file lives in public_html/workout/public, keep generated URLs under /workout.
+$docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+$scriptFile = str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME'] ?? __FILE__);
+$subdirectory = '';
 
-if ($requestPath === $subdirectory || str_starts_with($requestPath, $subdirectory.'/')) {
+if ($docRoot !== '' && str_starts_with($scriptFile, $docRoot.'/') && str_ends_with($scriptFile, '/public/index.php')) {
+    $subdirectory = substr($scriptFile, strlen($docRoot), -strlen('/public/index.php'));
+    $subdirectory = rtrim($subdirectory, '/');
+}
+
+if ($subdirectory !== '' && $subdirectory !== '/') {
     $_SERVER['SCRIPT_NAME'] = $subdirectory.'/index.php';
     $_SERVER['PHP_SELF'] = $subdirectory.'/index.php';
 
-    if ($requestPath === $subdirectory) {
-        $query = $_SERVER['QUERY_STRING'] ?? '';
-        $_SERVER['REQUEST_URI'] = $subdirectory.'/'.($query !== '' ? '?'.$query : '');
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $query = $_SERVER['QUERY_STRING'] ?? '';
+    $queryString = $query !== '' ? '?'.$query : '';
+
+    if ($requestPath === '/' || $requestPath === $subdirectory) {
+        $_SERVER['REQUEST_URI'] = $subdirectory.'/'.$queryString;
+    } elseif (! str_starts_with($requestPath, $subdirectory.'/')) {
+        $_SERVER['REQUEST_URI'] = $subdirectory.$requestPath.$queryString;
     }
 }
 

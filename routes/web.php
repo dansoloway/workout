@@ -5,7 +5,7 @@ use App\Http\Controllers\TodayController;
 use App\Http\Controllers\WorkoutItemController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/today');
+Route::get('/', fn () => redirect()->route('today'));
 
 Route::get('/today', TodayController::class)->name('today');
 
