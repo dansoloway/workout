@@ -1,5 +1,7 @@
 *.log
 .DS_Store
+/id_rsa
+/id_rsa.pub
 .env
 .env.backup
 .env.production
