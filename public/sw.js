@@ -1,4 +1,4 @@
-const CACHE = 'morning-workout-v3';
+const CACHE = 'morning-workout-v4';
 const BASE = new URL('.', self.location).pathname.replace(/\/$/, '');
 const PRECACHE = [
     `${BASE}/manifest.webmanifest`,

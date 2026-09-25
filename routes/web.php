@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\TodayController;
 use App\Http\Controllers\WorkoutItemController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/enter', [PasswordController::class, 'create'])->name('enter');
+Route::post('/enter', [PasswordController::class, 'store'])->middleware('throttle:8,1')->name('enter.store');
 
 Route::get('/', fn () => redirect()->route('today'));
 
@@ -29,7 +33,8 @@ Route::get('/manifest.webmanifest', function () {
         'name' => 'Morning Workout',
         'short_name' => 'Workout',
         'description' => 'A short daily morning workout tracker.',
-        'start_url' => $base.'/today',
+        'id' => ($base === '' ? '/' : $base.'/'),
+        'start_url' => $base.'/enter',
         'scope' => $base === '' ? '/' : $base.'/',
         'display' => 'standalone',
         'orientation' => 'portrait',

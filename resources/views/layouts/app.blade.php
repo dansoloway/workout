@@ -27,6 +27,7 @@
         </div>
     @endif
 
+    @unless (request()->routeIs('enter'))
     <nav class="fixed inset-x-0 bottom-0 z-10 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]" aria-label="Primary">
         <div class="mx-auto flex max-w-md gap-1 rounded-full bg-card/90 p-1 shadow-lg shadow-pine/10 ring-1 ring-line backdrop-blur">
             <a
@@ -53,13 +54,51 @@
             </a>
         </div>
     </nav>
+    @endunless
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('{{ asset('sw.js') }}');
+                navigator.serviceWorker.register('{{ asset('sw.js') }}', {
+                    scope: '{{ rtrim(request()->getBasePath(), '/') }}/',
+                });
             });
         }
+
+        (() => {
+            const box = document.querySelector('[data-install]');
+
+            if (! box) {
+                return;
+            }
+
+            const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+            if (standalone) {
+                box.remove();
+                return;
+            }
+
+            const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+            const iosNote = box.querySelector('[data-install-ios]');
+            const otherNote = box.querySelector('[data-install-other]');
+            const button = box.querySelector('[data-install-button]');
+
+            if (ios) {
+                iosNote?.classList.remove('hidden');
+                otherNote?.classList.add('hidden');
+            }
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                otherNote?.classList.add('hidden');
+                button?.classList.remove('hidden');
+                button?.addEventListener('click', async () => {
+                    await event.prompt();
+                    box.remove();
+                }, { once: true });
+            });
+        })();
     </script>
 </body>
 </html>

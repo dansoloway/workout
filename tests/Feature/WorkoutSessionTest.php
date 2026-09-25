@@ -288,7 +288,7 @@ class WorkoutSessionTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'application/manifest+json')
             ->assertJsonPath('display', 'standalone')
-            ->assertJsonPath('start_url', '/today')
+            ->assertJsonPath('start_url', '/enter')
             ->assertJsonPath('background_color', '#eef3fb')
             ->assertJsonPath('scope', '/');
     }
