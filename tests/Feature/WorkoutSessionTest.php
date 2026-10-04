@@ -31,13 +31,29 @@ class WorkoutSessionTest extends TestCase
             ->assertSee('No workout routine is set up yet.');
     }
 
-    public function test_today_creates_the_seeded_workout_once(): void
+    public function test_opening_today_does_not_start_calisthenics(): void
     {
         $this->seed(MorningWorkoutSeeder::class);
 
         $this->get('/today')
             ->assertOk()
-            ->assertSee('Morning Workout')
+            ->assertSee('Calisthenics')
+            ->assertSee('Start the checklist')
+            ->assertSee('No workout recorded');
+
+        $this->assertSame(0, Workout::query()->count());
+    }
+
+    public function test_starting_calisthenics_creates_the_seeded_workout_once(): void
+    {
+        $this->seed(MorningWorkoutSeeder::class);
+        $today = today()->toDateString();
+
+        $this->post(route('calisthenics.start', $today))
+            ->assertRedirect(route('calisthenics', $today));
+
+        $this->get(route('calisthenics', $today))
+            ->assertOk()
             ->assertSee('Cat–cow')
             ->assertSee('Bodyweight squats')
             ->assertSee('Knee push-ups')
@@ -53,7 +69,8 @@ class WorkoutSessionTest extends TestCase
             ->assertSee('60 sec')
             ->assertSee('data-workout-status="pending"', false);
 
-        $this->get('/today')->assertOk();
+        $this->post(route('calisthenics.start', $today))->assertRedirect();
+        $this->get('/today')->assertOk()->assertSee('0 of 10');
 
         $this->assertSame(1, Workout::query()->count());
         $this->assertSame(10, WorkoutItem::query()->count());
@@ -108,7 +125,7 @@ class WorkoutSessionTest extends TestCase
         $this->assertNotNull($workout->started_at);
         $this->assertSame(10, $workout->items()->where('completed', true)->count());
 
-        $this->get('/today')->assertSee('data-workout-status="completed"', false);
+        $this->get(route('calisthenics', today()->toDateString()))->assertSee('data-workout-status="completed"', false);
     }
 
     public function test_unchecking_reopens_a_finished_workout(): void
@@ -248,11 +265,13 @@ class WorkoutSessionTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->get('/today')
+        $this->post(route('calisthenics.start', today()->toDateString()))->assertRedirect();
+
+        $this->get(route('calisthenics', today()->toDateString()))
             ->assertOk()
-            ->assertSee('Morning Workout')
             ->assertSee('Cat–cow')
             ->assertDontSee('Evening Meditation');
+        $this->assertSame('Morning Workout', Workout::query()->sole()->routine_name);
     }
 
     public function test_another_persons_workout_is_hidden(): void
@@ -296,7 +315,7 @@ class WorkoutSessionTest extends TestCase
     private function startToday(): Workout
     {
         $this->seed(MorningWorkoutSeeder::class);
-        $this->get('/today')->assertOk();
+        $this->post(route('calisthenics.start', today()->toDateString()))->assertRedirect();
 
         return Workout::query()->with('items')->firstOrFail();
     }

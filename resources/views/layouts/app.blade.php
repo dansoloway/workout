@@ -28,16 +28,21 @@
     @endif
 
     @unless (request()->routeIs('enter'))
+    @php
+        $onToday = request()->routeIs('today')
+            || (request()->routeIs('calisthenics') && request()->route('date') === today()->toDateString());
+        $onCalendar = ! $onToday && request()->routeIs('calendar', 'calendar.show', 'calisthenics');
+    @endphp
     <nav class="fixed inset-x-0 bottom-0 z-10 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]" aria-label="Primary">
         <div class="mx-auto flex max-w-md gap-1 rounded-full bg-card/90 p-1 shadow-lg shadow-pine/10 ring-1 ring-line backdrop-blur">
             <a
                 href="{{ route('today') }}"
                 @class([
                     'flex min-h-12 flex-1 items-center justify-center rounded-full text-base font-semibold',
-                    'bg-pine text-white' => request()->routeIs('today'),
-                    'text-muted' => ! request()->routeIs('today'),
+                    'bg-pine text-white' => $onToday,
+                    'text-muted' => ! $onToday,
                 ])
-                @if (request()->routeIs('today')) aria-current="page" @endif
+                @if ($onToday) aria-current="page" @endif
             >
                 Today
             </a>
@@ -45,10 +50,10 @@
                 href="{{ route('calendar') }}"
                 @class([
                     'flex min-h-12 flex-1 items-center justify-center rounded-full text-base font-semibold',
-                    'bg-pine text-white' => request()->routeIs('calendar', 'calendar.show'),
-                    'text-muted' => ! request()->routeIs('calendar', 'calendar.show'),
+                    'bg-pine text-white' => $onCalendar,
+                    'text-muted' => ! $onCalendar,
                 ])
-                @if (request()->routeIs('calendar', 'calendar.show')) aria-current="page" @endif
+                @if ($onCalendar) aria-current="page" @endif
             >
                 Calendar
             </a>

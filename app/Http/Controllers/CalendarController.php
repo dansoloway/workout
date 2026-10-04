@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActivityType;
 use App\Enums\RoutineKind;
 use App\Enums\WorkoutStatus;
+use App\Models\Activity;
 use App\Models\Workout;
+use App\Services\DayLog;
+use App\Support\Day;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -25,41 +29,49 @@ class CalendarController extends Controller
             ->get()
             ->groupBy(fn (Workout $workout) => $workout->workout_date->toDateString());
 
+        $activities = Activity::query()
+            ->whereDate('activity_date', '>=', $start->toDateString())
+            ->whereDate('activity_date', '<=', $end->toDateString())
+            ->get()
+            ->groupBy(fn (Activity $activity) => $activity->activity_date->toDateString());
+
         $gridStart = $start->copy()->startOfWeek(Carbon::SUNDAY);
         $gridEnd = $end->copy()->endOfWeek(Carbon::SATURDAY);
         $days = [];
 
         for ($cursor = $gridStart->copy(); $cursor->lte($gridEnd); $cursor->addDay()) {
+            $key = $cursor->toDateString();
+
             $days[] = [
                 'date' => $cursor->copy(),
                 'in_month' => $cursor->month === $start->month,
                 'is_today' => $cursor->isSameDay(now()),
-                'marker' => $this->marker($workouts->get($cursor->toDateString(), collect())),
+                'marker' => $this->marker(
+                    $workouts->get($key, collect()),
+                    $activities->get($key, collect()),
+                ),
             ];
         }
+
+        $weekStart = today()->startOfWeek(Carbon::SUNDAY);
 
         return view('calendar.index', [
             'month' => $start,
             'days' => $days,
             'previous' => $start->copy()->subMonth()->format('Y-m'),
             'next' => $start->copy()->addMonth()->format('Y-m'),
+            'week' => $start->isSameMonth(today())
+                ? $this->summary($weekStart, $weekStart->copy()->endOfWeek(Carbon::SATURDAY))
+                : null,
+            'monthSummary' => $this->summary($start, $end),
         ]);
     }
 
-    public function show(string $date): View
+    public function show(DayLog $log, string $date): View
     {
-        $day = $this->date($date);
-
-        $workouts = Workout::query()
-            ->with('items')
-            ->where('kind', RoutineKind::Workout)
-            ->whereDate('workout_date', $day->toDateString())
-            ->orderBy('id')
-            ->get();
-
-        return view('calendar.show', [
-            'day' => $day,
-            'workouts' => $workouts,
+        return view('day', [
+            ...$log->for(Day::parse($date)),
+            'isTodayPage' => false,
         ]);
     }
 
@@ -84,26 +96,45 @@ class CalendarController extends Controller
         return $month->startOfMonth();
     }
 
-    private function date(string $value): Carbon
+    /**
+     * @return array{total: int, calisthenics: int, tennis: int, swimming: int, swim_minutes: int}
+     */
+    private function summary(Carbon $from, Carbon $to): array
     {
-        try {
-            $day = Carbon::createFromFormat('!Y-m-d', $value);
-        } catch (\Throwable) {
-            abort(404);
-        }
+        $calisthenics = Workout::query()
+            ->where('kind', RoutineKind::Workout)
+            ->where('status', '!=', WorkoutStatus::Pending)
+            ->whereDate('workout_date', '>=', $from->toDateString())
+            ->whereDate('workout_date', '<=', $to->toDateString())
+            ->count();
 
-        if (! $day || $day->format('Y-m-d') !== $value) {
-            abort(404);
-        }
+        $activities = Activity::query()
+            ->whereDate('activity_date', '>=', $from->toDateString())
+            ->whereDate('activity_date', '<=', $to->toDateString())
+            ->get();
 
-        return $day->startOfDay();
+        $tennis = $activities->where('type', ActivityType::Tennis);
+        $swimming = $activities->where('type', ActivityType::Swimming);
+
+        return [
+            'total' => $calisthenics + $activities->count(),
+            'calisthenics' => $calisthenics,
+            'tennis' => $tennis->count(),
+            'swimming' => $swimming->count(),
+            'swim_minutes' => (int) $swimming->sum('duration_minutes'),
+        ];
     }
 
     /**
      * @param  Collection<int, Workout>  $workouts
+     * @param  Collection<int, Activity>  $activities
      */
-    private function marker(Collection $workouts): string
+    private function marker(Collection $workouts, Collection $activities): string
     {
+        if ($activities->isNotEmpty()) {
+            return 'completed';
+        }
+
         $recorded = $workouts->filter(
             fn (Workout $workout) => $workout->status !== WorkoutStatus::Pending,
         );

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CalisthenicsController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\TodayController;
 use App\Http\Controllers\WorkoutItemController;
@@ -21,6 +23,16 @@ Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
 Route::get('/calendar/{date}', [CalendarController::class, 'show'])
     ->where('date', '[0-9]{4}-[0-9]{2}-[0-9]{2}')
     ->name('calendar.show');
+
+Route::prefix('/days/{date}')
+    ->where(['date' => '[0-9]{4}-[0-9]{2}-[0-9]{2}'])
+    ->group(function () {
+        Route::post('/calisthenics', [CalisthenicsController::class, 'store'])->name('calisthenics.start');
+        Route::get('/calisthenics', [CalisthenicsController::class, 'show'])->name('calisthenics');
+        Route::post('/activities', [ActivityController::class, 'store'])->name('activities.store');
+    });
+
+Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
 
 Route::get('/csrf-token', function () {
     return response()->json(['token' => csrf_token()]);

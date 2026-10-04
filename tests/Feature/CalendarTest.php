@@ -44,7 +44,7 @@ class CalendarTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Workout completed');
-        $response->assertSee('Partially completed');
+        $response->assertSee('Calisthenics partially completed');
         $response->assertSee('No workout recorded');
 
         $html = $response->getContent();

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $workout->routine_name)
+@section('title', 'Calisthenics')
 
 @section('full')
     @php
@@ -47,11 +47,12 @@
         :data-workout-status="status"
         @item-changed.window="applyLocal($event)"
         @workout-status.window="applyServer($event)"
-        class="mx-auto flex h-dvh max-w-md flex-col overflow-hidden px-4 pt-5"
+        class="mx-auto flex h-dvh max-w-md flex-col overflow-hidden px-4 pt-3"
         style="padding-bottom: calc(6.25rem + env(safe-area-inset-bottom))"
     >
         <header class="shrink-0">
-            <h1 class="text-3xl font-semibold tracking-tight text-ink">{{ $workout->routine_name }}</h1>
+            <a href="{{ $dayUrl }}" class="inline-flex min-h-8 items-center text-sm font-semibold uppercase tracking-wide text-muted">‹ {{ $dayLabel }}</a>
+            <h1 class="text-3xl font-semibold tracking-tight text-ink">Calisthenics</h1>
             <p class="mt-1 text-base text-muted">
                 {{ $workout->workout_date->format('l, F j') }}
                 · <span x-text="done">{{ $done }}</span> of <span x-text="total">{{ $total }}</span> done

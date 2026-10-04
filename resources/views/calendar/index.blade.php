@@ -5,7 +5,7 @@
 @section('content')
     @php
         $markerLabel = [
-            'completed' => 'workout completed',
+            'completed' => 'activity recorded',
             'partial' => 'partially completed',
             'none' => 'no workout recorded',
         ];
@@ -48,9 +48,16 @@
         @endforeach
     </div>
 
+    <div class="mt-6 space-y-2">
+        @if ($week)
+            @include('partials.activity-summary', ['key' => 'week', 'title' => 'This week', 'summary' => $week])
+        @endif
+        @include('partials.activity-summary', ['key' => 'month', 'title' => $month->format('F'), 'summary' => $monthSummary])
+    </div>
+
     <ul class="mt-6 space-y-2 text-base text-muted">
-        <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-leaf"></span> Workout completed</li>
-        <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-amber"></span> Partially completed</li>
+        <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-leaf"></span> Workout completed or activity logged</li>
+        <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-amber"></span> Calisthenics partially completed</li>
         <li class="flex items-center gap-3"><span class="size-2.5 rounded-full border border-muted"></span> No workout recorded</li>
     </ul>
 @endsection
