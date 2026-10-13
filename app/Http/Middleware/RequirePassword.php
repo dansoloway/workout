@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\PasswordGate;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,14 +24,10 @@ class RequirePassword
 
     private function allowed(Request $request): bool
     {
-        if ((string) config('workout.password') === '') {
-            return true;
-        }
-
         if ($request->routeIs('enter', 'enter.store', 'manifest')) {
             return true;
         }
 
-        return $request->session()->get('workout_unlocked') === true;
+        return PasswordGate::unlocked($request);
     }
 }

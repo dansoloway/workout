@@ -21,6 +21,10 @@
         @error('password')
             <p class="mt-2 text-base font-medium text-amber">{{ $message }}</p>
         @enderror
+        <label class="mt-3 flex min-h-12 cursor-pointer items-center gap-3 px-1 text-base text-ink">
+            <input type="checkbox" name="remember" value="1" checked class="size-5 accent-pine">
+            Remember me for 30 days
+        </label>
         <button type="submit" class="mt-3 min-h-14 w-full touch-manipulation rounded-full bg-pine text-lg font-semibold text-white shadow-sm shadow-pine/25">
             Continue
         </button>
