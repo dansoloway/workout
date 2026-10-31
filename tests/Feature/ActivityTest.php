@@ -157,6 +157,57 @@ class ActivityTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_stretching_and_meditation_are_logged_apart_from_workouts(): void
+    {
+        $today = today()->toDateString();
+
+        $this->post(route('activities.store', $today), ['type' => 'stretching', 'duration_minutes' => 10])->assertRedirect();
+        $this->post(route('activities.store', $today), ['type' => 'meditation', 'duration_minutes' => 15])->assertRedirect();
+
+        $this->assertSame(10, Activity::query()->where('type', ActivityType::Stretching)->sole()->duration_minutes);
+        $this->assertSame(15, Activity::query()->where('type', ActivityType::Meditation)->sole()->duration_minutes);
+
+        $this->get('/today')
+            ->assertOk()
+            ->assertSee('No workout recorded')
+            ->assertSeeInOrder(['Stretching &amp; meditation', 'Stretching', '10 min', 'Meditation', '15 min'], false);
+    }
+
+    public function test_stretching_and_meditation_need_minutes(): void
+    {
+        $today = today()->toDateString();
+
+        $this->post(route('activities.store', $today), ['type' => 'stretching'])
+            ->assertSessionHasErrors(['duration_minutes' => 'Enter how many minutes you stretched.']);
+        $this->post(route('activities.store', $today), ['type' => 'meditation', 'duration_minutes' => 0])
+            ->assertSessionHasErrors('duration_minutes');
+
+        $this->assertSame(0, Activity::query()->count());
+    }
+
+    public function test_stretching_and_meditation_get_their_own_calendar_dots_and_counts(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-14 09:00'));
+
+        Activity::query()->create(['activity_date' => '2026-10-12', 'type' => ActivityType::Stretching, 'duration_minutes' => 10]);
+        Activity::query()->create(['activity_date' => '2026-10-12', 'type' => ActivityType::Meditation, 'duration_minutes' => 20]);
+        Activity::query()->create(['activity_date' => '2026-10-13', 'type' => ActivityType::Meditation, 'duration_minutes' => 5]);
+        Activity::query()->create(['activity_date' => '2026-10-05', 'type' => ActivityType::Stretching, 'duration_minutes' => 15]);
+
+        $html = $this->get(route('calendar', ['month' => '2026-10']))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/data-date="2026-10-12"[^>]*data-marker="none"[^>]*data-practices="stretching meditation"/', $html);
+        $this->assertMatchesRegularExpression('/data-date="2026-10-13"[^>]*data-practices="meditation"/', $html);
+        $this->assertMatchesRegularExpression('/data-date="2026-10-14"[^>]*data-practices=""/', $html);
+
+        $this->assertSame('0', $this->summaryCounts($html, 'week')['total']);
+        $this->assertSame(['stretching' => '1', 'meditation' => '2'], $this->practiceCounts($html, 'week'));
+        $this->assertSame(['stretching' => '2', 'meditation' => '2'], $this->practiceCounts($html, 'month'));
+        $this->assertStringContainsString('25 min', $html);
+
+        Carbon::setTestNow();
+    }
+
     public function test_another_month_shows_only_the_month_total(): void
     {
         $html = $this->get(route('calendar', ['month' => today()->subMonths(2)->format('Y-m')]))->assertOk()->getContent();
@@ -177,5 +228,16 @@ class ActivityTest extends TestCase
         preg_match_all('/data-count="(\w+)">(\d+)</', $block, $counts);
 
         return ['total' => $total[1] ?? ''] + array_combine($counts[1], $counts[2]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function practiceCounts(string $html, string $key): array
+    {
+        preg_match('/data-summary="'.$key.'"(.*?)<\/section>/s', $html, $section);
+        preg_match_all('/data-practice="(\w+)">(\d+)</', $section[1] ?? '', $counts);
+
+        return array_combine($counts[1], $counts[2]);
     }
 }

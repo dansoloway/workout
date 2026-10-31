@@ -34,9 +34,8 @@ class Activity extends Model
 
     public function detail(): string
     {
-        return match ($this->type) {
-            ActivityType::Tennis => $this->partner?->label() ?? '',
-            ActivityType::Swimming => $this->duration_minutes.' min',
-        };
+        return $this->type->tracksMinutes()
+            ? $this->duration_minutes.' min'
+            : ($this->partner?->label() ?? '');
     }
 }

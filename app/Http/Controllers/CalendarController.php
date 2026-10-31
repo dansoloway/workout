@@ -41,15 +41,18 @@ class CalendarController extends Controller
 
         for ($cursor = $gridStart->copy(); $cursor->lte($gridEnd); $cursor->addDay()) {
             $key = $cursor->toDateString();
+            [$workoutActivities, $practices] = $activities->get($key, collect())
+                ->partition(fn (Activity $activity) => $activity->type->isWorkout());
 
             $days[] = [
                 'date' => $cursor->copy(),
                 'in_month' => $cursor->month === $start->month,
                 'is_today' => $cursor->isSameDay(now()),
-                'marker' => $this->marker(
-                    $workouts->get($key, collect()),
-                    $activities->get($key, collect()),
-                ),
+                'marker' => $this->marker($workouts->get($key, collect()), $workoutActivities),
+                'practices' => array_values(array_filter(
+                    ActivityType::practices(),
+                    fn (ActivityType $type) => $practices->contains('type', $type),
+                )),
             ];
         }
 
@@ -97,7 +100,7 @@ class CalendarController extends Controller
     }
 
     /**
-     * @return array{total: int, calisthenics: int, tennis: int, swimming: int, swim_minutes: int}
+     * @return array{total: int, calisthenics: int, tennis: int, swimming: int, swim_minutes: int, stretching: int, stretch_minutes: int, meditation: int, meditation_minutes: int}
      */
     private function summary(Carbon $from, Carbon $to): array
     {
@@ -115,13 +118,19 @@ class CalendarController extends Controller
 
         $tennis = $activities->where('type', ActivityType::Tennis);
         $swimming = $activities->where('type', ActivityType::Swimming);
+        $stretching = $activities->where('type', ActivityType::Stretching);
+        $meditation = $activities->where('type', ActivityType::Meditation);
 
         return [
-            'total' => $calisthenics + $activities->count(),
+            'total' => $calisthenics + $tennis->count() + $swimming->count(),
             'calisthenics' => $calisthenics,
             'tennis' => $tennis->count(),
             'swimming' => $swimming->count(),
             'swim_minutes' => (int) $swimming->sum('duration_minutes'),
+            'stretching' => $stretching->count(),
+            'stretch_minutes' => (int) $stretching->sum('duration_minutes'),
+            'meditation' => $meditation->count(),
+            'meditation_minutes' => (int) $meditation->sum('duration_minutes'),
         ];
     }
 

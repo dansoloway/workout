@@ -19,7 +19,7 @@ class ActivityController extends Controller
             'activity_date' => $day->toDateString(),
             'type' => $type,
             'partner' => $type === ActivityType::Tennis ? $request->input('partner') : null,
-            'duration_minutes' => $type === ActivityType::Swimming ? $request->integer('duration_minutes') : null,
+            'duration_minutes' => $type->tracksMinutes() ? $request->integer('duration_minutes') : null,
         ]);
 
         return back(fallback: Day::url($day));

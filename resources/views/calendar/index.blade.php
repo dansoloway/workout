@@ -14,6 +14,10 @@
             'partial' => 'bg-amber',
             'none' => 'bg-transparent',
         ];
+        $practiceClass = [
+            'stretching' => 'bg-stretch',
+            'meditation' => 'bg-calm',
+        ];
     @endphp
 
     <div class="mb-5 flex items-center justify-between">
@@ -34,7 +38,8 @@
                 href="{{ route('calendar.show', $day['date']->toDateString()) }}"
                 data-date="{{ $day['date']->toDateString() }}"
                 data-marker="{{ $day['marker'] }}"
-                aria-label="{{ $day['date']->format('F j') }}, {{ $markerLabel[$day['marker']] }}"
+                aria-label="{{ $day['date']->format('F j') }}, {{ $markerLabel[$day['marker']] }}@foreach ($day['practices'] as $practice), {{ strtolower($practice->label()) }}@endforeach"
+                data-practices="{{ collect($day['practices'])->map->value->implode(' ') }}"
                 @class([
                     'flex aspect-square flex-col items-center justify-center rounded-2xl text-base',
                     'text-ink' => $day['in_month'] && ! $day['is_today'],
@@ -43,7 +48,14 @@
                 ])
             >
                 <span>{{ $day['date']->day }}</span>
-                <span class="mt-1 size-2 rounded-full {{ $markerClass[$day['marker']] }}"></span>
+                <span class="mt-1 flex h-2 gap-1">
+                    @if ($day['marker'] !== 'none')
+                        <span class="size-2 rounded-full {{ $markerClass[$day['marker']] }}"></span>
+                    @endif
+                    @foreach ($day['practices'] as $practice)
+                        <span class="size-2 rounded-full {{ $practiceClass[$practice->value] }}"></span>
+                    @endforeach
+                </span>
             </a>
         @endforeach
     </div>
@@ -58,6 +70,8 @@
     <ul class="mt-6 space-y-2 text-base text-muted">
         <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-leaf"></span> Workout completed or activity logged</li>
         <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-amber"></span> Calisthenics partially completed</li>
+        <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-stretch"></span> Stretching</li>
+        <li class="flex items-center gap-3"><span class="size-2.5 rounded-full bg-calm"></span> Meditation</li>
         <li class="flex items-center gap-3"><span class="size-2.5 rounded-full border border-muted"></span> No workout recorded</li>
     </ul>
 @endsection

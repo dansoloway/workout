@@ -39,23 +39,7 @@
         @endforeach
 
         @foreach ($activities as $activity)
-            <div class="{{ $card }} flex min-h-20 items-center gap-3" data-activity="{{ $activity->type->value }}">
-                <span class="min-w-0 flex-1">
-                    <span class="block text-xl font-semibold leading-snug text-ink">{{ $activity->type->label() }}</span>
-                    <span class="mt-0.5 block text-base text-muted">{{ $activity->detail() }}</span>
-                </span>
-                <form method="POST" action="{{ route('activities.destroy', $activity) }}">
-                    @csrf
-                    @method('DELETE')
-                    <button
-                        type="submit"
-                        class="min-h-12 touch-manipulation rounded-full px-4 text-base font-semibold text-muted ring-1 ring-line"
-                        aria-label="Remove {{ $activity->type->label() }} {{ $activity->detail() }}"
-                    >
-                        Remove
-                    </button>
-                </form>
-            </div>
+            @include('partials.activity-row')
         @endforeach
 
         @if ($workouts->isEmpty() && $activities->isEmpty())
@@ -107,33 +91,27 @@
                 @enderror
             </div>
 
-            <form method="POST" action="{{ route('activities.store', $day->toDateString()) }}" class="{{ $card }} py-4">
-                @csrf
-                <input type="hidden" name="type" value="swimming">
-                <label for="swim-minutes" class="block text-xl font-semibold leading-snug text-ink">Swimming</label>
-                <div class="mt-3 flex gap-2">
-                    <input
-                        id="swim-minutes"
-                        name="duration_minutes"
-                        type="number"
-                        inputmode="numeric"
-                        min="1"
-                        max="600"
-                        required
-                        placeholder="Minutes"
-                        value="{{ old('duration_minutes') }}"
-                        class="min-h-12 min-w-0 flex-1 rounded-2xl bg-paper px-4 text-lg text-ink ring-1 ring-line outline-none focus:ring-2 focus:ring-pine"
-                    >
-                    <button type="submit" class="min-h-12 touch-manipulation rounded-full bg-pine px-6 text-base font-semibold text-white shadow-sm shadow-pine/25">
-                        Add
-                    </button>
-                </div>
-                @error('duration_minutes')
-                    <p class="mt-2 text-base font-medium text-amber">{{ $message }}</p>
-                @enderror
-            </form>
+            @include('partials.minutes-form', ['type' => \App\Enums\ActivityType::Swimming])
         </section>
     @endif
+
+    <section class="mt-10 space-y-2" aria-labelledby="practice-heading">
+        <h2 id="practice-heading" class="mb-3 text-sm font-semibold tracking-wide text-stretch">Stretching &amp; meditation</h2>
+
+        @forelse ($practices as $activity)
+            @include('partials.activity-row')
+        @empty
+            <p class="text-lg text-muted">Nothing logged yet</p>
+        @endforelse
+
+        @if ($canLog)
+            <div class="space-y-2 pt-2">
+                @foreach (\App\Enums\ActivityType::practices() as $type)
+                    @include('partials.minutes-form', ['type' => $type])
+                @endforeach
+            </div>
+        @endif
+    </section>
 
     @unless ($isTodayPage)
         @foreach ($workouts as $workout)

@@ -17,7 +17,7 @@ class StoreActivityRequest extends FormRequest
         return [
             'type' => ['required', Rule::enum(ActivityType::class)],
             'partner' => ['required_if:type,'.ActivityType::Tennis->value, 'nullable', Rule::enum(TennisPartner::class)],
-            'duration_minutes' => ['required_if:type,'.ActivityType::Swimming->value, 'nullable', 'integer', 'min:1', 'max:600'],
+            'duration_minutes' => [Rule::requiredIf(fn () => $this->activityType()?->tracksMinutes() ?? false), 'nullable', 'integer', 'min:1', 'max:600'],
         ];
     }
 
@@ -28,7 +28,12 @@ class StoreActivityRequest extends FormRequest
     {
         return [
             'partner.required_if' => 'Choose who you played with.',
-            'duration_minutes.required_if' => 'Enter how many minutes you swam.',
+            'duration_minutes.required' => $this->activityType()?->minutesPrompt() ?? 'Enter the minutes.',
         ];
+    }
+
+    private function activityType(): ?ActivityType
+    {
+        return ActivityType::tryFrom((string) $this->input('type'));
     }
 }
