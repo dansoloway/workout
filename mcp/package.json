@@ -1,0 +1,17 @@
+{
+  "name": "workout-mcp",
+  "version": "1.0.0",
+  "description": "Read-only MCP server for the Morning Workout tracker",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "workout-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  }
+}
